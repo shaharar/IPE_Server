@@ -13,10 +13,10 @@ var poolConfig = {
 
 // TODO: edit this
 var connectionConfig = {
-    userName: '',
-    password: '',
-    server: '',
-    options: { encrypt: true, database: '' }
+    userName: 'admin3.2',
+    password: 'aA123456',
+    server: 'ass3webdevserver.database.windows.net',
+    options: { encrypt: true, database: 'assignment3.2DB' }
 };
 
 //create the pool
