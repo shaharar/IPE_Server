@@ -11,7 +11,6 @@ var poolConfig = {
     log: true
 };
 
-// TODO: edit this
 var connectionConfig = {
     userName: 'admin3.2',
     password: 'aA123456',
