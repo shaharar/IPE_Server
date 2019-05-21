@@ -9,22 +9,6 @@ router.use(bodyParser.json());
 
 module.exports = router;
 
-function regValidation (reqObjects) {
-    const schema = joi.object().keys({
-        username: joi.string().alphanum().min(3).max(8).required(),
-        password: joi.string().regex(/^[a-zA-Z0-9]{5,10}$/).required(),
-        firstName: joi.string().regex(/^[a-zA-Z]{1,40}$/).required(),
-        lastName: joi.string().regex(/^[a-zA-Z]{1,40}$/).required(),
-        city: joi.string().regex(/^[a-zA-Z]{2,40}$/).required(),
-        email: joi.string().email({ minDomainAtoms: 2 }),
-        categories: joi.array().min(2).required()
-    }).with('username', 'password');
-
-    const validRes = joi.validate(reqObjects, schema);
-    return validRes;
-
-}
-
 //register
 router.post('/register', function(req,res) {
 
@@ -83,8 +67,8 @@ router.post('/register', function(req,res) {
                     }                    
                     //add questions and answers of user
                     for (let i = 0; i < questions.length; i++) {
-                        var query44 = "insert into UserQuestions (Username, QID, Answer) VALUES" + "('" + username + "','" + questions[i] + "','" + answers[i] + "')";
-                        DButilsAzure.execQuery(query44)
+                        var query5 = "insert into UserQuestions (Username, QID, Answer) VALUES" + "('" + username + "','" + questions[i] + "','" + answers[i] + "')";
+                        DButilsAzure.execQuery(query5)
                             .then(function(result){
                                 console.log("question and answer added")
                             })  
@@ -102,4 +86,18 @@ router.post('/register', function(req,res) {
     })
 })
 
+function regValidation (reqObjects) {
+    const schema = joi.object().keys({
+        username: joi.string().alphanum().min(3).max(8).required(),
+        password: joi.string().regex(/^[a-zA-Z0-9]{5,10}$/).required(),
+        firstName: joi.string().regex(/^[a-zA-Z]{1,40}$/).required(),
+        lastName: joi.string().regex(/^[a-zA-Z]{1,40}$/).required(),
+        city: joi.string().regex(/^[a-zA-Z]{2,40}$/).required(),
+        email: joi.string().email({ minDomainAtoms: 2 }),
+        categories: joi.array().min(2).required()
+    }).with('username', 'password');
 
+    const validRes = joi.validate(reqObjects, schema);
+    return validRes;
+
+}
