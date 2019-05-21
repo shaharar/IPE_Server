@@ -1,17 +1,28 @@
 {
-  "name": "AzureDB",
+  "name": "IPE_Server",
   "version": "1.0.0",
   "description": "",
-  "main": "app.js",
+  "main": "DButils.js",
+  "dependencies": {
+    "body-parser": "^1.19.0",
+    "express": "^4.17.0",
+    "jsonwebtoken": "^8.5.1",
+    "tedious": "^6.1.1",
+    "tedious-connection-pool": "^1.0.5"
+  },
+  "devDependencies": {},
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shaharar/IPE_Server.git"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "dependencies": {
-    "express": "^4.17.0",
-    "tedious": "^6.1.1",
-    "tedious-connection-pool": "^1.0.5"
-  }
+  "bugs": {
+    "url": "https://github.com/shaharar/IPE_Server/issues"
+  },
+  "homepage": "https://github.com/shaharar/IPE_Server#readme"
 }
