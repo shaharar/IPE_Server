@@ -35,13 +35,11 @@ router.post('/register', function(req,res) {
     var city = req.body.City;
     var country = req.body.Country;
     var email = req.body.Email;
-    var q1 = req.body.SecurityQ1;
-    var q2 = req.body.SecurityQ2;
-    var a1 = req.body.SecurityA1;
-    var a2 = req.body.SecurityA2;
+    var questions = req.body.SecurityQ;
+    var answers = req.body.SecurityA;
     var categories = req.body.Categories;
 
-    //validation
+    //validation of fields
     let objects = {
         username: req.body.Username,
         password: req.body.Password,
@@ -52,38 +50,52 @@ router.post('/register', function(req,res) {
         categories: req.body.Categories
      };    
 
-    //------------------check valid of country, questions - TODO ------------------------------
-
      const {error} = regValidation (objects);
      if (error) {
-        res.send({success: false, message: error.details[0].message});
+        res.status(400).send({success: false, message: error.details[0].message});
         return;
      }
-
-    var query1 = "SELECT * FROM Users where Username = '" + username + "'";
+     
+     //validation of country
+    var query1 = "SELECT * FROM Countries where Name = '" + country + "'";
     DButilsAzure.execQuery(query1)
-        .then(function(result){
-            if(result.length == 0) { //there is no user with this username -> username is valid.
-                var query2 = "insert into Users (Username, Password, FirstName, LastName, City, Country, Email, SecurityQ1, SecurityQ2, SecurityA1, SecurityA2) VALUES" + "('" + username + "','" + password + "','" + firstName + "','" + lastName + "','" 
-                            + city + "','" + country + "','" + email + "','" + q1 + "','" + q2 + "','" + a1 + "','" + a2 + "')";
-                DButilsAzure.execQuery(query2)
-                    .then(function(result){
-                    })
-
-                //add categories of user
-                for (let i = 0; i < categories.length; i++) {
-                    var query3 = "insert into UserCategories (Username, CategoryID) VALUES" + "('" + username + "','" + categories[i] + "')";
+    .then(function(result){
+        if(result.length == 0){
+            res.status(400).send({success: false, message: "Country is invalid"});
+            return;
+        }   
+        var query2 = "SELECT * FROM Users where Username = '" + username + "'";
+        DButilsAzure.execQuery(query2)
+            .then(function(result){
+                if(result.length == 0) { //there is no user with this username -> username is valid.
+                    var query3 = "insert into Users (Username, Password, FirstName, LastName, City, Country, Email) VALUES" + "('" + username + "','" + password + "','" + firstName + "','" + lastName + "','" 
+                                + city + "','" + country + "','" + email + "')";
                     DButilsAzure.execQuery(query3)
                         .then(function(result){
-                            console.log("Category added")
-                        })  
+                        })
+                    //add categories of user
+                    for (let i = 0; i < categories.length; i++) {
+                        var query4 = "insert into UserCategories (Username, CategoryID) VALUES" + "('" + username + "','" + categories[i] + "')";
+                        DButilsAzure.execQuery(query4)
+                            .then(function(result){
+                                console.log("Category added")
+                            })  
+                    }                    
+                    //add questions and answers of user
+                    for (let i = 0; i < questions.length; i++) {
+                        var query44 = "insert into UserQuestions (Username, QID, Answer) VALUES" + "('" + username + "','" + questions[i] + "','" + answers[i] + "')";
+                        DButilsAzure.execQuery(query44)
+                            .then(function(result){
+                                console.log("question and answer added")
+                            })  
+                    }
+                    res.status(200).send({success: true, message: "Registration succeeded"}); //success
                 }
-                res.status(200).send({success: true, message: "Registration succeeded"}); //success
-            }
-            else {
-                res.status(400).send({success: false, message: "Username already exists, please choose another one"}) //failure
-            }
-        })
+                else {
+                    res.status(400).send({success: false, message: "Username already exists, please choose another one"}) //failure
+                }
+            })
+    })       
     .catch(function(err){
         console.log(err)
         res.send(err)
