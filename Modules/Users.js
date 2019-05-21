@@ -2,6 +2,9 @@ var express = require('express');
 var router = express.Router();
 var bodyParser = require('body-parser');
 var DButilsAzure = require('../DButils');
+var jwt = require('jsonwebtoken');
+
+var secret = "s&y";
 
 router.use(bodyParser.urlencoded({ extended: false }));
 router.use(bodyParser.json());
@@ -73,5 +76,92 @@ router.post('/register', function(req,res) {
         res.send(err)
     })
 })
+
+
+
+//-----------------------------------------------login - TODO
+router.post('/login', function(req,res){
+    // check if undefined-TODO
+
+    var username = req.body.Username;
+    var password = req.body.Password;
+
+    if (!username || !password){
+        res.status(400).send({success : false, message: "one or more fields required"});
+        return;
+    }
+
+    var query1 = "SELECT * FROM Users where Username = '" + username + "'";
+    DButilsAzure.execQuery(query1).then(function(result){
+        if (result.length != 0){
+            if (result[0].Password && result[0].Password == password){
+                                //send token - TODO
+                signToken(result,res);
+                res.status(200).send({success : true, message : "successfull login attempt"});
+                return;
+            } 
+        }
+        res.status(400).send({success : false, message : "invalid login attempt"});
+   
+      
+
+    })  
+    .catch(function(err){
+        console.log(err)
+        res.send(err)
+    })
+})
+
+
+
+function signToken(user,res){
+    var payload = {username : user[0].Username, name : user[0].FirstName + " " + user[0].LastName};
+    var options = {expiresIn : "1d"};
+    const token = jwt.sign(payload,secret,options);
+    res.send(token);
+} 
+
+
+
+router.post('/retrievePassword', function(req,res){
+    var username = req.body.Username;
+    var quetions = req.body.SecurityQ;
+    var answers = req.body.SecurityA;
+
+    var query1 = "SELECT * FROM Users where Username = '" + username + "'";
+    DButilsAzure.execQuery(query1).then(function(result){
+        if(result.length != 0){
+            var userQ = result[0].SecurityQ;
+            var userA = result[0].SecurityA;
+            var valid = true;
+            for (var i = 0; i < userQ.length; i++){
+                if (userQ[i] != quetions[i] || userA[i] != answers[i]){
+                    valid = false;
+                }
+            }
+            if (valid){
+                res.status(200).send({success : true, message : response[0].Password});
+            }
+            else{
+                res.status(400).send({success : false, message : "invalid attemp to retrieve password"});
+            }
+        }
+        else{
+            res.status(400).send({success : false, message : "invalid attemp to retrieve password"}); 
+        }
+
+    })
+
+})
+
+
+
+
+
+
+
+
+
+
 
 
