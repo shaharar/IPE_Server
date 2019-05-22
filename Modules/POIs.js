@@ -75,19 +75,19 @@ router.post('/addRank/', function (req, res) {
     var review = req.body.Review;
     var currDate = new Date().toISOString();
     var totalRanks = 0;
-    DButilsAzure.execQuery("insert into POIsReviews (POI_ID,Username,Rank,Review,Date) values (" + poiID + "," + "'" + req.decoded.payload.username + ",'" + + rank + ",'" + review + "','" + currDate + "')")
+    DButilsAzure.execQuery("insert into POIsReviews (POI_ID,Username,Rank,Review,Date) VALUES (" + poiID + "," + "'" + req.decoded.payload.username + ",'" + + rank + ",'" + review + "','" + currDate + "')")
     .then(function (result) {
         DButilsAzure.execQuery("select Rank from POIsReviews where POI_ID = " + poiID)
         .then(function (result) {
         for (let i = 0; i < result.length; i++) {
             totalRanks += result[i].Rank;
         }
-        avgRank = (totalRanks / (result.length * 5)) * 100;
+        var avgRank = (totalRanks / (result.length));
+        var newRank = (avgRank / 5) * 100;
 
-        DButilsAzure.execQuery("update POIs set Rank = " + avgRank + " where ID = " + poiID)
+        DButilsAzure.execQuery("update POIs set Rank = " + newRank + " where ID = " + poiID)
         .then(function (result) {
-            res.status(200).send({success: true, message: "Review added successfuly"})
-            
+            res.status(200).send({success: true, message: "Review added successfuly"})            
         })
     }).catch(function (err) {
         res.send(err);
