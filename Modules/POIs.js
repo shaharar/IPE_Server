@@ -14,7 +14,15 @@ router.get('/getPOIByID/:id', function(req,res) {
     DButilsAzure.execQuery(query1)
         .then(function(result){
             if(result.length != 0) {
-                res.status(200).send(result)
+                var query2 = "update POIs set UsersWatching=" + (result[0].UsersWatching + 1) + " where ID ='" + poiID + "'";
+                DButilsAzure.execQuery(query2)
+                    .then(function(result){
+                        var query3 = "SELECT * FROM POIs where ID = '" + poiID + "'";
+                        DButilsAzure.execQuery(query3)
+                            .then(function(result){
+                                res.status(200).send(result)
+                            })
+                    })
             }
             else {
                 res.status(400).send({success: false, message: "POI ID is invalid"})
@@ -47,37 +55,32 @@ router.get('/getPOIByName/:name', function(req,res) {
     var poiName = req.params.name;
     var query1 = "SELECT * FROM POIs where Name = '" + poiName + "'";
     DButilsAzure.execQuery(query1)
-        .then(function(result){
-            if(result.length != 0) {
-                var query2 = "update POIs set UsersWatching=" + (result[0].UsersWatching + 1) + " where Name='" + poiName + "'";
-                DButilsAzure.execQuery(query2)
-                    .then(function(result){
-                        var query3 = "SELECT * FROM POIs where Name = '" + poiName + "'";
-                        DButilsAzure.execQuery(query3)
-                            .then(function(result){
-                                res.status(200).send(result)
-                            })
-                    })
-            }
-            else {
-                res.status(400).send({success: false, message: "POI Name is invalid"})
-            }
-        })
-        .catch(function(err){
-            console.log(err)
-            res.send(err)
-        })
+    .then(function(result){
+        if(result.length != 0) {
+            res.status(200).send(result)
+        }
+        else {
+            res.status(400).send({success: false, message: "POI Name is invalid"})
+        }
+    })
+    .catch(function(err){
+        console.log(err)
+        res.send(err)
+    })
 })
 
 router.post('/addRank/', function (req, res) {
+    var username = req.decoded.payload.username;
     var poiID = req.body.ID;
     var rank = req.body.Rank;
     var review = req.body.Review;
     var currDate = new Date().toISOString();
     var totalRanks = 0;
-    DButilsAzure.execQuery("insert into POIsReviews (POI_ID,Username,Rank,Review,Date) VALUES (" + poiID + "," + "'" + req.decoded.payload.username + ",'" + + rank + ",'" + review + "','" + currDate + "')")
+    var query1 = "insert into POIsReviews (POI_ID,Username,Rank,Review,Date) VALUES (" + poiID + "," + "'" + username + ",'" + + rank + ",'" + review + "','" + currDate + "')";
+    DButilsAzure.execQuery(query1)
     .then(function (result) {
-        DButilsAzure.execQuery("select Rank from POIsReviews where POI_ID = " + poiID)
+        var query2 = "SELECT Rank from POIsReviews where POI_ID = " + poiID;
+        DButilsAzure.execQuery(query2)
         .then(function (result) {
         for (let i = 0; i < result.length; i++) {
             totalRanks += result[i].Rank;
@@ -85,15 +88,51 @@ router.post('/addRank/', function (req, res) {
         var avgRank = (totalRanks / (result.length));
         var newRank = (avgRank / 5) * 100;
 
-        DButilsAzure.execQuery("update POIs set Rank = " + newRank + " where ID = " + poiID)
+        var query3 = "update POIs set Rank = " + newRank + " where ID = " + poiID;
+        DButilsAzure.execQuery(query3)
         .then(function (result) {
             res.status(200).send({success: true, message: "Review added successfuly"})            
         })
     }).catch(function (err) {
         res.send(err);
     })
-    }).catch(function(err)
-    {
-        res.status(400).send({success: false, message: "The same review from this user exists"})
+    }).catch(function(err) {
+        res.status(400).send({success: false, message: "This POI already has this review from this user"})
     })   
+})
+
+router.get('/getFavoritesPOIsOfUser/', function(req,res) {
+
+    var username = req.decoded.payload.username;
+
+    var query1 = "SELECT POI_ID from FavoritesPOIs where Username = '" + username + "'";
+    DButilsAzure.execQuery(query1)
+    .then(function (result) {
+        if(result.length == 0) {
+            res.status(400).send({success: false, message: "There are no favorites POIs for this user"})
+            return
+        }
+        else if(result.length < 2) {
+                res.status(400).send({success: false, message: "There is only one favorite POI - should be at least two"})
+                return
+        }
+        else {
+            for (let i = 0; i < result.length; i++) {
+                var query2 = "SELECT * FROM POIs where ID = '" + poiID + "'";
+                DButilsAzure.execQuery(query2)
+                    .then(function(result){
+                        if(result.length != 0) {
+                            res.status(200).send(result)
+                        }
+                        else {
+                            res.status(400).send({success: false, message: "POI ID is invalid"})
+                        }
+                    })
+                    .catch(function(err){
+                        console.log(err)
+                        res.send(err)
+                    })
+            }
+        }
+    })
 })
