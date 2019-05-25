@@ -103,6 +103,7 @@ router.post('/addRank/', function (req, res) {
 
 router.get('/getFavoritesPOIsOfUser/', function(req,res) {
 
+    var promises = [];
     var username = req.decoded.payload.username;
 
     var query1 = "SELECT POI_ID from FavoritesPOIs where Username = '" + username + "'";
@@ -118,11 +119,13 @@ router.get('/getFavoritesPOIsOfUser/', function(req,res) {
         }
         else {
             for (let i = 0; i < result.length; i++) {
-                var query2 = "SELECT * FROM POIs where ID = '" + poiID + "'";
-                DButilsAzure.execQuery(query2)
-                    .then(function(result){
+                newPromise = new Promise(function(resolve,reject){
+                resolve(function(result2){
+                    var query2 = "SELECT * FROM POIs where ID = '" + result[i].poiID + "'";
+                    DButilsAzure.execQuery(query2)
+                    .then(function(result2){
                         if(result.length != 0) {
-                            res.status(200).send(result)
+                            res.status(200).send(result2)
                         }
                         else {
                             res.status(400).send({success: false, message: "POI ID is invalid"})
@@ -132,7 +135,13 @@ router.get('/getFavoritesPOIsOfUser/', function(req,res) {
                         console.log(err)
                         res.send(err)
                     })
+                })
+                promises[i] = newPromise;
+            })
             }
+            Promise.all(promises).then(function(results){
+                res.send(results);
+            })
         }
     })
 })
