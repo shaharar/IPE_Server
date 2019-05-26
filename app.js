@@ -2,9 +2,7 @@ var express = require('express');
 var bodyParser = require('body-parser');
 var users = require('./Modules/Users');
 var poi = require('./Modules/POIs');
-var DButilsAzure = require('./DButils');
 var app = express();
-var jwt = require('jsonwebtoken');
 
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
