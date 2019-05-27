@@ -5,7 +5,7 @@ var joi = require('joi');
 var DButilsAzure = require('../DButils');
 var jwt = require('jsonwebtoken');
 
-var secret = "s&y";
+var secret = "SAYH";
 
 router.use(bodyParser.urlencoded({ extended: false }));
 router.use(bodyParser.json());
@@ -123,7 +123,6 @@ router.post('/login', function(req,res){
             if (result[0].Password && result[0].Password == password){
                                 //send token - TODO
                 signToken(result,res);
-                res.status(200).send({success : true, message : "successfull login attempt"});
                 return;
             } 
         }
@@ -141,31 +140,41 @@ router.post('/login', function(req,res){
 
 
 function signToken(user,res){
-    var payload = {username : user[0].Username, name : user[0].FirstName + " " + user[0].LastName};
-    var options = {expiresIn : "1d"};
-    const token = jwt.sign(payload,secret,options);
-    res.send(token);
+    var categories = [];
+    var query1 = "SELECT CategoryID FROM UserCategories where Username = '" + user[0].Username + "'";
+    DButilsAzure.execQuery(query1).then(function(result){
+        for (var i = 0; i < result.length; i++){
+            categories.push(result[i]);
+        }
+        var payload = {username : user[0].Username, name : user[0].FirstName + " " + user[0].LastName ,usersCategories : categories};
+        var options = {expiresIn: "1d"};
+        const token = jwt.sign(payload,secret,options);
+        // const decoded = jwt.verify(token, secret);
+        // console.log(decoded);
+        res.status(200).send({success : true, message : "successfull login attempt", userToken : token});
+    }) 
+   .catch(function(err){
+        console.log(err)
+        res.send(err)
+    })
+
 } 
 
 
 
 router.post('/retrievePassword', function(req,res){
     var username = req.body.Username;
-    var quetions = req.body.SecurityQ;
-    var answers = req.body.SecurityA;
+    var question = req.body.SecurityQ;
+    var answer = req.body.SecurityA;
 
     var query1 = "SELECT * FROM Users where Username = '" + username + "'";
     DButilsAzure.execQuery(query1).then(function(result){
         if(result.length != 0){
-            var userQ = result[0].SecurityQ;
-            var userA = result[0].SecurityA;
-            var valid = true;
-            for (var i = 0; i < userQ.length; i++){
-                if (userQ[i] != quetions[i] || userA[i] != answers[i]){
-                    valid = false;
-                }
-            }
-            if (valid){
+            var userQ1 = result[0].Q1;
+            var userA1 = result[0].A1;
+            var userQ2 = result[0].Q2;
+            var userA2 = result[0].A2;
+            if ((userQ1 == question && userA1 == answer) || (userQ2 == question && userA2 == answer) ){
                 res.status(200).send({success : true, message : response[0].Password});
             }
             else{
@@ -176,6 +185,10 @@ router.post('/retrievePassword', function(req,res){
             res.status(400).send({success : false, message : "invalid attemp to retrieve password"}); 
         }
 
+    })    
+    .catch(function(err){
+        console.log(err)
+        res.send(err)
     })
 
 })

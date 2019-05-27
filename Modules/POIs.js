@@ -2,11 +2,56 @@ var express = require('express');
 var router = express.Router();
 var bodyParser = require('body-parser');
 var DButilsAzure = require('../DButils');
+var jwt = require('jsonwebtoken');
+
+var secret = "SAYH";
+
 
 router.use(bodyParser.urlencoded({ extended: false }));
 router.use(bodyParser.json());
 
 module.exports = router;
+
+
+
+router.use("/private", (req, res,next) => {
+    const token = req.header("x-auth-token");
+	// token not provided
+	if (!token) res.status(401).send({success : false, message : "Access denied. No token provided"});
+	// verify token
+	try {
+        const decoded = jwt.verify(token, secret);
+        req.decoded = decoded;
+		next(); 
+	} catch (exception) {
+		res.status(400).send({success : false, message : "Invalid token", tokenRec: token});
+    }
+});
+
+router.post("/get3RandomPOIs", function(req,res){
+    console.log("test");
+})
+
+router.post("/private/saveFavoritePOIs", function(req,res){
+    var username = req.decoded.username;
+    DButilsAzure.execQuery("Delete from FavoritesPOIs where Username='" + username + "'").then(function (result) {
+        var userFavorites = req.body.favorites;
+        for (var i = 0; i < userFavorites.length; i++) {
+            DButilsAzure.execQuery("insert into FavoritesPOIs (Username, POI_ID) VALUES"  + "('" + username + "','" + userFavorites[i] +  "')").then(function(result){
+                console.log("Favorite added")
+            })
+        }
+        res.status(200).send({success: true, message: "Favorites list was updated"});
+    }).catch(function (err) {
+        res.send(err);
+    })
+
+})
+
+router.post("/private/get2POIsByCategories", function(req,res){
+    console.log("test");
+})
+
 
 router.get('/getPOIByID/:id', function(req,res) {
     var poiID = req.params.id;
