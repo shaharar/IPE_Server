@@ -22,8 +22,10 @@ router.post('/register', function(req,res) {
     var city = req.body.City;
     var country = req.body.Country;
     var email = req.body.Email;
-    var questions = req.body.SecurityQ;
-    var answers = req.body.SecurityA;
+    var Q1 = req.body.SecurityQ1;
+    var Q2 = req.body.SecurityQ2;
+    var A1 = req.body.SecurityA1;
+    var A2 = req.body.SecurityA2;
     var categories = req.body.Categories;
 
     //validation of fields
@@ -44,43 +46,52 @@ router.post('/register', function(req,res) {
      }
      
      //validation of country
-    var query1 = "SELECT * FROM Countries where Name = '" + country + "'";
-    DButilsAzure.execQuery(query1)
+    var query = "SELECT * FROM Countries where Name = '" + country + "'";
+    DButilsAzure.execQuery(query)
     .then(function(result){
         if(result.length == 0){
             res.status(400).send({success: false, message: "Country is invalid"});
             return;
-        }   
-        var query2 = "SELECT * FROM Users where Username = '" + username + "'";
-        DButilsAzure.execQuery(query2)
+        }
+         //validation of questions
+        var query1 = "SELECT * FROM Questions where Question = '" + Q1 + "'";
+        DButilsAzure.execQuery(query1)
+        .then(function(result){
+            if(result.length == 0){
+                res.status(400).send({success: false, message: "Question is invalid"});
+                return;
+            }
+            var query11 = "SELECT * FROM SecurityQuestions where Question = '" + Q2 + "'";
+            DButilsAzure.execQuery(query11)
             .then(function(result){
-                if(result.length == 0) { //there is no user with this username -> username is valid.
-                    var query3 = "insert into Users (Username, Password, FirstName, LastName, City, Country, Email) VALUES" + "('" + username + "','" + password + "','" + firstName + "','" + lastName + "','" 
-                                + city + "','" + country + "','" + email + "')";
-                    DButilsAzure.execQuery(query3)
-                        .then(function(result){
-                        })
-                    //add categories of user
-                    for (let i = 0; i < categories.length; i++) {
-                        var query4 = "insert into UserCategories (Username, CategoryID) VALUES" + "('" + username + "','" + categories[i] + "')";
-                        DButilsAzure.execQuery(query4)
-                            .then(function(result){
-                                console.log("Category added")
-                            })  
-                    }                    
-                    //add questions and answers of user
-                    for (let i = 0; i < questions.length; i++) {
-                        var query5 = "insert into UserQuestions (Username, QID, Answer) VALUES" + "('" + username + "','" + questions[i] + "','" + answers[i] + "')";
-                        DButilsAzure.execQuery(query5)
-                            .then(function(result){
-                                console.log("question and answer added")
-                            })  
-                    }
-                    res.status(200).send({success: true, message: "Registration succeeded"}); //success
-                }
-                else {
-                    res.status(400).send({success: false, message: "Username already exists, please choose another one"}) //failure
-                }
+                if(result.length == 0){
+                    res.status(400).send({success: false, message: "Question is invalid"});
+                    return;
+                }     
+                var query2 = "SELECT * FROM Users where Username = '" + username + "'";
+                DButilsAzure.execQuery(query2)
+                    .then(function(result){
+                        if(result.length == 0) { //there is no user with this username -> username is valid.
+                            var query3 = "insert into Users (Username, Password, FirstName, LastName, City, Country, Email, Q1, Q2, A1, A2) VALUES" + "('" + username + "','" + password + "','" + firstName + "','" + lastName + "','" 
+                                        + city + "','" + country + "','" + email + "','" + Q1 + "','" + Q2 + "','" + A1 + "','" + A2 + "')";
+                            DButilsAzure.execQuery(query3)
+                                .then(function(result){
+                                })
+                            //add categories of user
+                            for (let i = 0; i < categories.length; i++) {
+                                var query4 = "insert into UserCategories (Username, CategoryID) VALUES" + "('" + username + "','" + categories[i] + "')";
+                                DButilsAzure.execQuery(query4)
+                                    .then(function(result){
+                                        console.log("Category added")
+                                    })  
+                            }                    
+                            res.status(200).send({success: true, message: "Registration succeeded"}); //success
+                        }
+                        else {
+                            res.status(400).send({success: false, message: "Username already exists, please choose another one"}) //failure
+                        }
+                    })
+                })
             })
     })       
     .catch(function(err){
@@ -160,8 +171,6 @@ function signToken(user,res){
 
 } 
 
-
-
 router.post('/retrievePassword', function(req,res){
     var username = req.body.Username;
     var question = req.body.SecurityQ;
@@ -190,7 +199,6 @@ router.post('/retrievePassword', function(req,res){
         console.log(err)
         res.send(err)
     })
-
 })
 
 
