@@ -52,7 +52,6 @@ router.post("/private/get2POIsByCategories", function(req,res){
 })
 
 function getPOIByID (poiID) {
-    console.log("ENTER")
     return new Promise(function (resolve, reject) {
         var query1 = "SELECT * FROM POIs where ID = '" + poiID + "'";
         DButilsAzure.execQuery(query1)
@@ -65,12 +64,14 @@ function getPOIByID (poiID) {
             var query2 = "SELECT Rank, Review, Date from POIsReviews where POI_ID=" + poiID + " order by Date desc";
             return DButilsAzure.execQuery(query2)
             .then(function (reviewResults) {
-                if(reviewResults.length == 0) {
-                    resolve("No reviews for this POI")
-                    return;
-                }
                 let review1 = reviewResults[0];
                 let review2 = reviewResults[1];
+
+                
+                if(reviewResults.length == 0) {
+                    review1 = "";
+                    review2 = "";
+                }
 
                 let PoifullInfo = {
                     "ID": poiID,
@@ -95,7 +96,7 @@ router.get('/getPOIByID/:id', function(req,res) {
     var poiID = req.params.id;
     getPOIByID(poiID)
     .then(function (result) {
-        if(result == "POI ID is invalid" || result == "No reviews for this POI")
+        if(result == "POI ID is invalid")
         {
             res.status(400).send({success: false, message: result})
         }
@@ -111,31 +112,6 @@ router.get('/getPOIByID/:id', function(req,res) {
     })
     .catch(function (err) {
         console.log (err) })
-
-
-    // var poiID = req.params.id;
-    // var query1 = "SELECT * FROM POIs where ID = '" + poiID + "'";
-    // DButilsAzure.execQuery(query1)
-    //     .then(function(result){
-    //         if(result.length != 0) {
-    //             var query2 = "update POIs set UsersWatching=" + (result[0].UsersWatching + 1) + " where ID ='" + poiID + "'";
-    //             DButilsAzure.execQuery(query2)
-    //                 .then(function(result){
-    //                     var query3 = "SELECT * FROM POIs where ID = '" + poiID + "'";
-    //                     DButilsAzure.execQuery(query3)
-    //                         .then(function(result){
-    //                             res.status(200).send(result)
-    //                         })
-    //                 })
-    //         }
-    //         else {
-    //             res.status(400).send({success: false, message: "POI ID is invalid"})
-    //         }
-    //     })
-    //     .catch(function(err){
-    //         console.log(err)
-    //         res.send(err)
-    //     })
 })
 
 
@@ -146,20 +122,11 @@ router.get('/getAllPOIs', function(req,res) {
         .then(function(result){
             if(result.length != 0) {
                 var promises = [];
-                // for (let i = 0; i < result.length ; i++) {
-                //     let newPromise = new Promise(function(resolve,reject){
-                //     resolve(getPOIbyID(result[i].ID))
-                //     promises[i] = newPromise;
-                // })}
                 for (let i = 0; i < result.length ; i++) {
-                    promises[i] = new Promise(function(resolve,reject){
-                    resolve(getPOIbyID(result[i].ID))
-                //    reject(new Error("OOPS"))                    
-                })}
-                console.log("AAAAAAAAAAAAA")
+                    promises[i] = getPOIByID(result[i].ID);
+                }
                 Promise.all(promises)
                 .then(function(results){
-                    console.log("BBBBBBBBBBBBB")
                     res.status(200).send(results);
                 })            
             }
@@ -181,10 +148,7 @@ router.get('/getPOIByName/:name', function(req,res) {
         if(result.length != 0) { 
             var promises = [];           
             for (let i = 0; i < result.length; i++) {
-                promises[i] = new Promise(function(resolve,reject){
-                resolve(getPOIbyID(result[i].ID));
-               // reject(new Error("OOPS"));     
-            })
+                promises[i] = getPOIByID(result[i].ID);   
             }
             Promise.all(promises)
             .then(function(results){
@@ -201,7 +165,7 @@ router.get('/getPOIByName/:name', function(req,res) {
     })
 })
 
-router.post('/private/addRank/', function (req, res) {
+router.post('/private/addRank', function (req, res) {
     var username = req.decoded.username;
     var poiID = req.body.ID;
     var rank = req.body.Rank;
@@ -233,12 +197,13 @@ router.post('/private/addRank/', function (req, res) {
     })   
 })
 
-router.get('/private/getFavoritesPOIsOfUser/', function(req,res) {
+router.get('/private/getFavoritesPOIsOfUser', function(req,res) {
 
     var promises = [];
     var username = req.decoded.username;
 
     var query1 = "SELECT POI_ID from FavoritesPOIs where Username = '" + username + "'";
+    console.log(username);
     DButilsAzure.execQuery(query1)
     .then(function (result) {
         if(result.length == 0) {
@@ -251,10 +216,8 @@ router.get('/private/getFavoritesPOIsOfUser/', function(req,res) {
         }
         else {
             for (let i = 0; i < result.length; i++) {
-                let newPromise = new Promise(function(resolve,reject){
-                resolve(getPOIbyID(result[i].ID))
-                promises[i] = newPromise;
-            })
+                console.log("ID - " + result[i].POI_ID);
+                promises[i] = getPOIByID(result[i].POI_ID);
             }
             Promise.all(promises)
             .then(function(results){
