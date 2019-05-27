@@ -29,15 +29,37 @@ router.use("/private", (req, res,next) => {
 });
 
 router.post("/get3RandomPOIs", function(req,res){
-    console.log("test");
+var query1 = "select POI_ID from POIsReviews where Rank >= 3.5";
+DButilsAzure.execQuery(query1).then(function (result) {
+var randIndexArr = [];
+var promiseArr = [];
+for (var i = 0; i < 3; i++){
+    promiseArr[i] = new Promise(function(resolve,reject){
+        let randIndex = Math.floor(Math.random() * result.length);
+        while(randIndexArr.includes(randIndex)){
+            randIndex = Math.floor(Math.random() * result.length);
+        }
+        randIndexArr[i] = randIndex;
+        resolve(getPOIByID(result[randIndex].POI_ID));
+
+    })
+}
+Promise.all(promiseArr).then(function(results){
+    res.send(results);
+
 })
+})
+})
+
 
 router.post("/private/saveFavoritePOIs", function(req,res){
     var username = req.decoded.username;
-    DButilsAzure.execQuery("Delete from FavoritesPOIs where Username='" + username + "'").then(function (result) {
+    var query1 = "Delete from FavoritesPOIs where Username='" + username + "'";
+    var query2 = "insert into FavoritesPOIs (Username, POI_ID) VALUES"  + "('" + username + "','" + userFavorites[i] +  "')";
+    DButilsAzure.execQuery(query1).then(function (result) {
         var userFavorites = req.body.favorites;
         for (var i = 0; i < userFavorites.length; i++) {
-            DButilsAzure.execQuery("insert into FavoritesPOIs (Username, POI_ID) VALUES"  + "('" + username + "','" + userFavorites[i] +  "')").then(function(result){
+            DButilsAzure.execQuery(query2).then(function(result){
                 console.log("Favorite added")
             })
         }
@@ -48,8 +70,35 @@ router.post("/private/saveFavoritePOIs", function(req,res){
 
 })
 
+
+
+
+
+
 router.post("/private/get2POIsByCategories", function(req,res){
-    console.log("test");
+    var userCategories = req.decoded.usersCategories;
+    var randIndexArr = [];
+    var promiseArr = [];
+
+    for (var i = 0; i < 2; i++){
+        promiseArr[i] = new Promise(function(resolve,reject){
+            let randIndex = Math.floor(Math.random() * userCategories.length);
+            while(randIndexArr.includes(randIndex)){
+                randIndex = Math.floor(Math.random() * userCategories.length);
+            }
+            randIndexArr[i] = randIndex;
+            var query = "select ID from POIs where CategoryID ='" + userCategories[randIndex]+"' order by Rank desc";
+            DButilsAzure.execQuery(query).then(function(result){
+                resolve(getPOIByID(result[i].POI_ID));
+            })
+    
+        })
+    }
+    Promise.all(promiseArr).then(function(results){
+        res.send(results);
+    
+    })
+
 })
 
 function getPOIByID (poiID) {
