@@ -13,7 +13,6 @@ router.use(bodyParser.json());
 module.exports = router;
 
 
-
 router.use("/private", (req, res,next) => {
     const token = req.header("x-auth-token");
 	// token not provided
@@ -53,6 +52,7 @@ router.post("/private/get2POIsByCategories", function(req,res){
 })
 
 function getPOIByID (poiID) {
+    console.log("ENTER")
     return new Promise(function (resolve, reject) {
         var query1 = "SELECT * FROM POIs where ID = '" + poiID + "'";
         DButilsAzure.execQuery(query1)
@@ -65,6 +65,10 @@ function getPOIByID (poiID) {
             var query2 = "SELECT Rank, Review, Date from POIsReviews where POI_ID=" + poiID + " order by Date desc";
             return DButilsAzure.execQuery(query2)
             .then(function (reviewResults) {
+                if(reviewResults.length == 0) {
+                    resolve("No reviews for this POI")
+                    return;
+                }
                 let review1 = reviewResults[0];
                 let review2 = reviewResults[1];
 
@@ -80,29 +84,33 @@ function getPOIByID (poiID) {
                     "CategoryID": poi.CategoryID
                 }
                 resolve(PoifullInfo);
-            }).catch(function (err) {console.log (err) })
-        }).catch(function (err) { console.log (err)})
+            }).catch(function (err) {
+                console.log (err) })
+        }).catch(function (err) {
+             console.log (err)})
     });
 }
 
 router.get('/getPOIByID/:id', function(req,res) {
-
-    getPOIByID(req.params.id)
+    var poiID = req.params.id;
+    getPOIByID(poiID)
     .then(function (result) {
-        if(result == "POI ID is invalid")
+        if(result == "POI ID is invalid" || result == "No reviews for this POI")
         {
-            res.json(result);
-            return;
+            res.status(400).send({success: false, message: result})
         }
-        var query = "update POIs set UsersWatching=" + (result[0].UsersWatching + 1) + " where ID ='" + poiID + "'";
-        DButilsAzure.execQuery(query)
-        .then(function(result){
-        })
-        .catch(function (err) {
-
-        })
-        res.json(result);
+        else {
+            var query = "update POIs set UsersWatching=" + (result.UsersWatching + 1) + " where ID ='" + poiID + "'";
+            DButilsAzure.execQuery(query)
+            .then(function(result){
+            })
+            .catch(function (err) {
+                console.log (err) })
+            res.send(result);
+        }
     })
+    .catch(function (err) {
+        console.log (err) })
 
 
     // var poiID = req.params.id;
@@ -138,13 +146,20 @@ router.get('/getAllPOIs', function(req,res) {
         .then(function(result){
             if(result.length != 0) {
                 var promises = [];
+                // for (let i = 0; i < result.length ; i++) {
+                //     let newPromise = new Promise(function(resolve,reject){
+                //     resolve(getPOIbyID(result[i].ID))
+                //     promises[i] = newPromise;
+                // })}
                 for (let i = 0; i < result.length ; i++) {
-                    let newPromise = new Promise(function(resolve,reject){
+                    promises[i] = new Promise(function(resolve,reject){
                     resolve(getPOIbyID(result[i].ID))
-                    promises[i] = newPromise;
+                //    reject(new Error("OOPS"))                    
                 })}
+                console.log("AAAAAAAAAAAAA")
                 Promise.all(promises)
                 .then(function(results){
+                    console.log("BBBBBBBBBBBBB")
                     res.status(200).send(results);
                 })            
             }
@@ -163,11 +178,12 @@ router.get('/getPOIByName/:name', function(req,res) {
     var query1 = "SELECT ID FROM POIs where Name = '" + poiName + "'";
     DButilsAzure.execQuery(query1)
     .then(function(result){
-        if(result.length != 0) {            
+        if(result.length != 0) { 
+            var promises = [];           
             for (let i = 0; i < result.length; i++) {
-                let newPromise = new Promise(function(resolve,reject){
-                resolve(getPOIbyID(result[i].ID))
-                promises[i] = newPromise;
+                promises[i] = new Promise(function(resolve,reject){
+                resolve(getPOIbyID(result[i].ID));
+               // reject(new Error("OOPS"));     
             })
             }
             Promise.all(promises)
