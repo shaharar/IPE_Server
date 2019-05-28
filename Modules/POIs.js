@@ -171,8 +171,9 @@ router.post('/private/addRank', function (req, res) {
     var rank = req.body.Rank;
     var review = req.body.Review;
     var currDate = new Date().toISOString();
+
     var totalRanks = 0;
-    var query1 = "insert into POIsReviews (POI_ID,Username,Rank,Review,Date) VALUES (" + poiID + "," + "'" + username + ",'" + + rank + ",'" + review + "','" + currDate + "')";
+    var query1 = "insert into POIsReviews (POI_ID, Username, Rank, Review, Date) VALUES" + "('" + poiID + "','" + username + "','" + rank + "','" + review + "','" + currDate + "')";
     DButilsAzure.execQuery(query1)
     .then(function (result) {
         var query2 = "SELECT Rank from POIsReviews where POI_ID = " + poiID;
@@ -198,7 +199,6 @@ router.post('/private/addRank', function (req, res) {
 })
 
 router.get('/private/getFavoritesPOIsOfUser', function(req,res) {
-
     var promises = [];
     var username = req.decoded.username;
 
