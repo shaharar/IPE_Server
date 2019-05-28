@@ -35,8 +35,11 @@ router.post("/private/saveFavoritePOIs", function(req,res){
     var username = req.decoded.username;
     DButilsAzure.execQuery("Delete from FavoritesPOIs where Username='" + username + "'").then(function (result) {
         var userFavorites = req.body.favorites;
+        var priorities = req.body.priorities;
         for (var i = 0; i < userFavorites.length; i++) {
-            DButilsAzure.execQuery("insert into FavoritesPOIs (Username, POI_ID) VALUES"  + "('" + username + "','" + userFavorites[i] +  "')").then(function(result){
+            console.log(priorities[i]);
+            DButilsAzure.execQuery("insert into FavoritesPOIs (Username, POI_ID, Priority) VALUES"  + "('" + username + "','" + userFavorites[i] + "','" + priorities[i] +  "')")
+            .then(function(result){
                 console.log("Favorite added")
             })
         }
@@ -44,7 +47,6 @@ router.post("/private/saveFavoritePOIs", function(req,res){
     }).catch(function (err) {
         res.send(err);
     })
-
 })
 
 router.post("/private/get2POIsByCategories", function(req,res){
@@ -201,28 +203,41 @@ router.post('/private/addRank', function (req, res) {
 router.get('/private/getFavoritesPOIsOfUser', function(req,res) {
     var promises = [];
     var username = req.decoded.username;
-
     var query1 = "SELECT POI_ID from FavoritesPOIs where Username = '" + username + "'";
-    console.log(username);
     DButilsAzure.execQuery(query1)
     .then(function (result) {
         if(result.length == 0) {
             res.status(400).send({success: false, message: "There are no favorites POIs for this user"})
             return
         }
-        else if(result.length < 2) {
-                res.status(400).send({success: false, message: "There is only one favorite POI - should be at least two"})
-                return
-        }
+        // else if(result.length < 2) {
+        //         res.status(400).send({success: false, message: "There is only one favorite POI - should be at least two"})
+        //         return
+        // }
         else {
-            for (let i = 0; i < result.length; i++) {
-                console.log("ID - " + result[i].POI_ID);
+            for (let i = 0; i < result.length && i < 2; i++) {
                 promises[i] = getPOIByID(result[i].POI_ID);
             }
             Promise.all(promises)
             .then(function(results){
                 res.status(200).send(results);
             })
+        }
+    })
+})
+
+
+router.get('/private/getFavoritesPriorities', function(req,res) {
+    var username = req.decoded.username;
+    var query1 = "SELECT POI_ID, Priority from FavoritesPOIs where Username = '" + username + "'";
+    DButilsAzure.execQuery(query1)
+    .then(function (result) {
+        if(result.length == 0) {
+            res.status(400).send({success: false, message: "There are no favorites POIs for this user"})
+            return
+        }
+        else {
+            res.status(200).send(result);
         }
     })
 })
