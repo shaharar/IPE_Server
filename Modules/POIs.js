@@ -27,27 +27,26 @@ router.use("/private", (req, res,next) => {
     }
 });
 
-router.post("/get3RandomPOIs", function(req,res){
-var query1 = "select ID from POIs where Rank >= 70";
-DButilsAzure.execQuery(query1).then(function (result) {
-var randIndexArr = [];
-var promiseArr = [];
-for (var i = 0; i < result.length && i < 3; i++){
-    promiseArr[i] = new Promise(function(resolve,reject){
-        let randIndex = Math.floor(Math.random() * result.length);
-        while(randIndexArr.includes(randIndex)){
-            randIndex = Math.floor(Math.random() * result.length);
-        }
-        randIndexArr[i] = randIndex;
-        resolve(getPOIByID(result[randIndex].ID));
+router.get("/get3RandomPOIs", function(req,res){
+    var query1 = "select ID from POIs where Rank >= 70";
+    DButilsAzure.execQuery(query1).then(function (result) {
+    var randIndexArr = [];
+    var promiseArr = [];
+    for (var i = 0; i < result.length && i < 3; i++){
+        promiseArr[i] = new Promise(function(resolve,reject){
+            let randIndex = Math.floor(Math.random() * result.length);
+            while(randIndexArr.includes(randIndex)){
+                randIndex = Math.floor(Math.random() * result.length);
+            }
+            randIndexArr[i] = randIndex;
+            resolve(getPOIByID(result[randIndex].ID));
+        })
+    }
+    Promise.all(promiseArr).then(function(results){
+        res.status(200).send(results);
 
     })
-}
-Promise.all(promiseArr).then(function(results){
-    res.status(200).send(results);
-
-})
-})
+    })
 })
 
 
@@ -71,10 +70,7 @@ router.post("/private/saveFavoritePOIs", function(req,res){
 
 
 
-
-
-
-router.post("/private/get2POIsByCategories", function(req,res){
+router.get("/private/get2POIsByCategories", function(req,res){
     var userCategories = req.decoded.usersCategories;
     var randIndexArr = [];
     var promiseArr = [];
@@ -247,9 +243,10 @@ router.post('/private/addRank', function (req, res) {
     })   
 })
 
-router.get('/private/getFavoritesPOIsOfUser', function(req,res) {
+router.get('/private/getFavoritesPOIsOfUser/:POINum', function(req,res) {
     var promises = [];
     var username = req.decoded.username;
+    var poiNum = req.params.POINum;
     var query1 = "SELECT POI_ID from FavoritesPOIs where Username = '" + username + "'";
     DButilsAzure.execQuery(query1)
     .then(function (result) {
@@ -261,8 +258,17 @@ router.get('/private/getFavoritesPOIsOfUser', function(req,res) {
         //         res.status(400).send({success: false, message: "There is only one favorite POI - should be at least two"})
         //         return
         // }
-        else {
+        else if(poiNum == 2) {
             for (let i = 0; i < result.length && i < 2; i++) {
+                promises[i] = getPOIByID(result[i].POI_ID);
+            }
+            Promise.all(promises)
+            .then(function(results){
+                res.status(200).send(results);
+            })
+        }
+        else {
+            for (let i = 0; i < result.length; i++) {
                 promises[i] = getPOIByID(result[i].POI_ID);
             }
             Promise.all(promises)

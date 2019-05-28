@@ -116,9 +116,7 @@ function regValidation (reqObjects) {
 }
 
 
-//-----------------------------------------------login - TODO
 router.post('/login', function(req,res){
-    // check if undefined-TODO
 
     var username = req.body.Username;
     var password = req.body.Password;
@@ -132,15 +130,11 @@ router.post('/login', function(req,res){
     DButilsAzure.execQuery(query1).then(function(result){
         if (result.length != 0){
             if (result[0].Password && result[0].Password == password){
-                                //send token - TODO
                 signToken(result,res);
                 return;
             } 
         }
         res.status(400).send({success : false, message : "invalid login attempt"});
-   
-      
-
     })  
     .catch(function(err){
         console.log(err)
@@ -193,7 +187,6 @@ router.post('/retrievePassword', function(req,res){
         else{
             res.status(400).send({success : false, message : "invalid attemp to retrieve password"}); 
         }
-
     })    
     .catch(function(err){
         console.log(err)
