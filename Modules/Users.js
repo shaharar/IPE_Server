@@ -201,6 +201,33 @@ router.post('/retrievePassword', function(req,res){
     })
 })
 
+router.get('/getUserQuestions', function(req,res){
+    var username = req.body.Username;
+    if (!username){
+        res.status(400).send({success : false, message: "one or more fields required"});
+        return;
+    }
+    var query = "SELECT Q1, Q2 FROM Users where Username = '" + username + "'";
+    DButilsAzure.execQuery(query).then(function(result){
+        res.status(200).send(result);
+    })
+    .catch(function(err){
+        res.send(err)
+    })
+})
+
+
+router.get('/getSecurityQuestions', function(req,res){
+    var query = "SELECT Question FROM SecurityQuestions";
+    DButilsAzure.execQuery(query).then(function(result){
+        res.status(200).send(result);
+    })
+    .catch(function(err){
+        res.send(err)
+    })
+}
+)
+
 
 
 

@@ -28,18 +28,18 @@ router.use("/private", (req, res,next) => {
 });
 
 router.post("/get3RandomPOIs", function(req,res){
-var query1 = "select POI_ID from POIsReviews where Rank >= 3.5";
+var query1 = "select ID from POIs where Rank >= 70";
 DButilsAzure.execQuery(query1).then(function (result) {
 var randIndexArr = [];
 var promiseArr = [];
-for (var i = 0; i < 3; i++){
+for (var i = 0; i < result.length && i < 3; i++){
     promiseArr[i] = new Promise(function(resolve,reject){
         let randIndex = Math.floor(Math.random() * result.length);
         while(randIndexArr.includes(randIndex)){
             randIndex = Math.floor(Math.random() * result.length);
         }
         randIndexArr[i] = randIndex;
-        resolve(getPOIByID(result[randIndex].POI_ID));
+        resolve(getPOIByID(result[randIndex].ID));
 
     })
 }
@@ -86,9 +86,10 @@ router.post("/private/get2POIsByCategories", function(req,res){
                 randIndex = Math.floor(Math.random() * userCategories.length);
             }
             randIndexArr[i] = randIndex;
-            var query = "select ID from POIs where CategoryID ='" + userCategories[randIndex]+"' order by Rank desc";
+            var query = "select ID from POIs where CategoryID ='" + userCategories[randIndex].CategoryID+"' order by Rank desc";
             DButilsAzure.execQuery(query).then(function(result){
-                resolve(getPOIByID(result[i].POI_ID));
+                console.log(result);
+                resolve(getPOIByID(result[0].ID));
             })
     
         })
@@ -101,7 +102,6 @@ router.post("/private/get2POIsByCategories", function(req,res){
 })
 
 function getPOIByID (poiID) {
-    console.log("ENTER")
     return new Promise(function (resolve, reject) {
         var query1 = "SELECT * FROM POIs where ID = '" + poiID + "'";
         DButilsAzure.execQuery(query1)
@@ -114,12 +114,14 @@ function getPOIByID (poiID) {
             var query2 = "SELECT Rank, Review, Date from POIsReviews where POI_ID=" + poiID + " order by Date desc";
             return DButilsAzure.execQuery(query2)
             .then(function (reviewResults) {
-                if(reviewResults.length == 0) {
-                    resolve("No reviews for this POI")
-                    return;
-                }
                 let review1 = reviewResults[0];
                 let review2 = reviewResults[1];
+
+                
+                if(reviewResults.length == 0) {
+                    review1 = "";
+                    review2 = "";
+                }
 
                 let PoifullInfo = {
                     "ID": poiID,
@@ -144,7 +146,7 @@ router.get('/getPOIByID/:id', function(req,res) {
     var poiID = req.params.id;
     getPOIByID(poiID)
     .then(function (result) {
-        if(result == "POI ID is invalid" || result == "No reviews for this POI")
+        if(result == "POI ID is invalid")
         {
             res.status(400).send({success: false, message: result})
         }
@@ -160,31 +162,6 @@ router.get('/getPOIByID/:id', function(req,res) {
     })
     .catch(function (err) {
         console.log (err) })
-
-
-    // var poiID = req.params.id;
-    // var query1 = "SELECT * FROM POIs where ID = '" + poiID + "'";
-    // DButilsAzure.execQuery(query1)
-    //     .then(function(result){
-    //         if(result.length != 0) {
-    //             var query2 = "update POIs set UsersWatching=" + (result[0].UsersWatching + 1) + " where ID ='" + poiID + "'";
-    //             DButilsAzure.execQuery(query2)
-    //                 .then(function(result){
-    //                     var query3 = "SELECT * FROM POIs where ID = '" + poiID + "'";
-    //                     DButilsAzure.execQuery(query3)
-    //                         .then(function(result){
-    //                             res.status(200).send(result)
-    //                         })
-    //                 })
-    //         }
-    //         else {
-    //             res.status(400).send({success: false, message: "POI ID is invalid"})
-    //         }
-    //     })
-    //     .catch(function(err){
-    //         console.log(err)
-    //         res.send(err)
-    //     })
 })
 
 
@@ -195,20 +172,11 @@ router.get('/getAllPOIs', function(req,res) {
         .then(function(result){
             if(result.length != 0) {
                 var promises = [];
-                // for (let i = 0; i < result.length ; i++) {
-                //     let newPromise = new Promise(function(resolve,reject){
-                //     resolve(getPOIbyID(result[i].ID))
-                //     promises[i] = newPromise;
-                // })}
                 for (let i = 0; i < result.length ; i++) {
-                    promises[i] = new Promise(function(resolve,reject){
-                    resolve(getPOIByID(result[i].ID))
-                //    reject(new Error("OOPS"))                    
-                })}
-                console.log("AAAAAAAAAAAAA")
+                    promises[i] = getPOIByID(result[i].ID);
+                }
                 Promise.all(promises)
                 .then(function(results){
-                    console.log("BBBBBBBBBBBBB")
                     res.status(200).send(results);
                 })            
             }
@@ -230,10 +198,7 @@ router.get('/getPOIByName/:name', function(req,res) {
         if(result.length != 0) { 
             var promises = [];           
             for (let i = 0; i < result.length; i++) {
-                promises[i] = new Promise(function(resolve,reject){
-                resolve(getPOIbyID(result[i].ID));
-               // reject(new Error("OOPS"));     
-            })
+                promises[i] = getPOIByID(result[i].ID);   
             }
             Promise.all(promises).then(function(results){
                 res.status(200).send(results);
@@ -249,14 +214,15 @@ router.get('/getPOIByName/:name', function(req,res) {
     })
 })
 
-router.post('/private/addRank/', function (req, res) {
+router.post('/private/addRank', function (req, res) {
     var username = req.decoded.username;
     var poiID = req.body.ID;
     var rank = req.body.Rank;
     var review = req.body.Review;
     var currDate = new Date().toISOString();
+
     var totalRanks = 0;
-    var query1 = "insert into POIsReviews (POI_ID,Username,Rank,Review,Date) VALUES (" + poiID + "," + "'" + username + ",'" + + rank + ",'" + review + "','" + currDate + "')";
+    var query1 = "insert into POIsReviews (POI_ID, Username, Rank, Review, Date) VALUES" + "('" + poiID + "','" + username + "','" + rank + "','" + review + "','" + currDate + "')";
     DButilsAzure.execQuery(query1)
     .then(function (result) {
         var query2 = "SELECT Rank from POIsReviews where POI_ID = " + poiID;
@@ -281,12 +247,12 @@ router.post('/private/addRank/', function (req, res) {
     })   
 })
 
-router.get('/private/getFavoritesPOIsOfUser/', function(req,res) {
-
+router.get('/private/getFavoritesPOIsOfUser', function(req,res) {
     var promises = [];
     var username = req.decoded.username;
 
     var query1 = "SELECT POI_ID from FavoritesPOIs where Username = '" + username + "'";
+    console.log(username);
     DButilsAzure.execQuery(query1)
     .then(function (result) {
         if(result.length == 0) {
@@ -299,10 +265,8 @@ router.get('/private/getFavoritesPOIsOfUser/', function(req,res) {
         }
         else {
             for (let i = 0; i < result.length; i++) {
-                let newPromise = new Promise(function(resolve,reject){
-                resolve(getPOIbyID(result[i].ID))
-                promises[i] = newPromise;
-            })
+                console.log("ID - " + result[i].POI_ID);
+                promises[i] = getPOIByID(result[i].POI_ID);
             }
             Promise.all(promises)
             .then(function(results){
@@ -311,3 +275,14 @@ router.get('/private/getFavoritesPOIsOfUser/', function(req,res) {
         }
     })
 })
+
+router.get('/getPOIsCategories', function(req,res){
+    var query = "SELECT * FROM Categories";
+    DButilsAzure.execQuery(query).then(function(result){
+        res.status(200).send(result);
+    })
+    .catch(function(err){
+        res.send(err)
+    })
+})
+
