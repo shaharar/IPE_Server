@@ -44,7 +44,7 @@ for (var i = 0; i < 3; i++){
     })
 }
 Promise.all(promiseArr).then(function(results){
-    res.send(results);
+    res.status(200).send(results);
 
 })
 })
@@ -94,7 +94,7 @@ router.post("/private/get2POIsByCategories", function(req,res){
         })
     }
     Promise.all(promiseArr).then(function(results){
-        res.send(results);
+        res.status(200).send(results);
     
     })
 
@@ -202,7 +202,7 @@ router.get('/getAllPOIs', function(req,res) {
                 // })}
                 for (let i = 0; i < result.length ; i++) {
                     promises[i] = new Promise(function(resolve,reject){
-                    resolve(getPOIbyID(result[i].ID))
+                    resolve(getPOIByID(result[i].ID))
                 //    reject(new Error("OOPS"))                    
                 })}
                 console.log("AAAAAAAAAAAAA")
@@ -235,8 +235,7 @@ router.get('/getPOIByName/:name', function(req,res) {
                // reject(new Error("OOPS"));     
             })
             }
-            Promise.all(promises)
-            .then(function(results){
+            Promise.all(promises).then(function(results){
                 res.status(200).send(results);
             })
         }
