@@ -39,6 +39,7 @@ router.post('/register', function(req,res) {
         categories: req.body.Categories
      };    
 
+
      const {error} = regValidation (objects);
      if (error) {
         res.status(400).send({success: false, message: error.details[0].message});
@@ -54,7 +55,7 @@ router.post('/register', function(req,res) {
             return;
         }
          //validation of questions
-        var query1 = "SELECT * FROM Questions where Question = '" + Q1 + "'";
+        var query1 = "SELECT * FROM SecurityQuestions where Question = '" + Q1 + "'";
         DButilsAzure.execQuery(query1)
         .then(function(result){
             if(result.length == 0){
@@ -82,7 +83,6 @@ router.post('/register', function(req,res) {
                                 var query4 = "insert into UserCategories (Username, CategoryID) VALUES" + "('" + username + "','" + categories[i] + "')";
                                 DButilsAzure.execQuery(query4)
                                     .then(function(result){
-                                        console.log("Category added")
                                     })  
                             }                    
                             res.status(200).send({success: true, message: "Registration succeeded"}); //success
@@ -154,8 +154,6 @@ function signToken(user,res){
         var payload = {username : user[0].Username, name : user[0].FirstName + " " + user[0].LastName ,usersCategories : categories};
         var options = {expiresIn: "1d"};
         const token = jwt.sign(payload,secret,options);
-        // const decoded = jwt.verify(token, secret);
-        // console.log(decoded);
         res.status(200).send({success : true, message : "successfull login attempt", userToken : token});
     }) 
    .catch(function(err){

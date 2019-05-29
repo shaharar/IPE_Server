@@ -52,12 +52,12 @@ router.get("/get3RandomPOIs", function(req,res){
 
 router.post("/private/saveFavoritePOIs", function(req,res){
     var username = req.decoded.username;
+    var userFavorites = req.body.favorites;
+    var priorities = req.body.priorities;
     var query1 = "Delete from FavoritesPOIs where Username='" + username + "'";
-    var query2 = "insert into FavoritesPOIs (Username, POI_ID, Priority) VALUES"  + "('" + username + "','" + userFavorites[i] + "','" + priorities[i] +  "')";
     DButilsAzure.execQuery(query1).then(function (result) {
-        var userFavorites = req.body.favorites;
-        var priorities = req.body.priorities;
         for (var i = 0; i < userFavorites.length; i++) {
+            var query2 = "insert into FavoritesPOIs (Username, POI_ID, Priority) VALUES"  + "('" + username + "','" + userFavorites[i] + "','" + priorities[i] +  "')";
             DButilsAzure.execQuery(query2).then(function(result){
                 console.log("Favorite added")
             })
@@ -247,6 +247,12 @@ router.get('/private/getFavoritesPOIsOfUser/:POINum', function(req,res) {
     var promises = [];
     var username = req.decoded.username;
     var poiNum = req.params.POINum;
+    // if (!req.params){
+    //     poiNum = 0;
+    // }
+    // else{
+    //     poiNum = req.params.POINum;
+    // }
     var query1 = "SELECT POI_ID from FavoritesPOIs where Username = '" + username + "'";
     DButilsAzure.execQuery(query1)
     .then(function (result) {
@@ -258,8 +264,8 @@ router.get('/private/getFavoritesPOIsOfUser/:POINum', function(req,res) {
         //         res.status(400).send({success: false, message: "There is only one favorite POI - should be at least two"})
         //         return
         // }
-        else if(poiNum == 2) {
-            for (let i = 0; i < result.length && i < 2; i++) {
+        else if(poiNum != 2) {
+            for (let i = 0; i < result.length; i++) {
                 promises[i] = getPOIByID(result[i].POI_ID);
             }
             Promise.all(promises)
@@ -267,8 +273,8 @@ router.get('/private/getFavoritesPOIsOfUser/:POINum', function(req,res) {
                 res.status(200).send(results);
             })
         }
-        else {
-            for (let i = 0; i < result.length; i++) {
+        else if(poiNum == 2) {
+            for (let i = 0; i < result.length && i < 2; i++) {
                 promises[i] = getPOIByID(result[i].POI_ID);
             }
             Promise.all(promises)
